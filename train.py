@@ -32,16 +32,13 @@ def main(cfg, logger):
 
 
     # Training Stage One
-    logger.info("Building the model for stage 1")
     model = build_training_model(cfg)
-    logger.info("Move to cuda")
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()        # move to GPU before dist
     logger.info("Dist model")
     if cfg.DEVICE.DIST:
         model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
 
-    logger.info("Training settings")
     criterion_1 = build_criterion(cfg, stage=1)
     optimizer_1 = build_optimizer(cfg.TRAIN.STAGE1, model)
     scheduler_1 = build_scheduler(cfg.TRAIN.STAGE1, optimizer_1, len(train_loader))

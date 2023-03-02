@@ -28,6 +28,13 @@ def weights_init_classifier(m):
         if m.bias:
             nn.init.constant_(m.bias, 0.0)
 
+def mask_tensor(tensor, indices):
+    """ Mask global feature at dim 1"""
+    mask = torch.ones((tensor.shape[0], tensor.shape[1]), dtype=torch.bool)
+    mask[torch.arange(tensor.shape[0]), indices] = False
+    mask = mask.unsqueeze(-1).unsqueeze(-1).expand_as(tensor)
+    return tensor[mask].reshape((tensor.shape[0], tensor.shape[1]-1, tensor.shape[2], tensor.shape[3]))
+
 
 class TextEncoder(nn.Module):
     def __init__(self, clip_model):
@@ -39,18 +46,22 @@ class TextEncoder(nn.Module):
         self.dtype = clip_model.dtype
 
     def forward(self, text): 
-        x = self.token_embedding(text).type(self.dtype)
+        x = self.token_embedding(text).type(self.dtype).squeeze()
         eot_idx = x.argmax(dim=-1)
         x = x + self.positional_embedding.type(self.dtype) 
         x = x.permute(1, 0, 2)  # BLD -> LBD
         x = self.transformer(x) 
         x = x.permute(1, 0, 2)  # LBD -> BLD
         x = self.ln_final(x).type(self.dtype) 
+        x1 = x.clone()
+        # gather_idx = mask_tensor(torch.arange(x.shape[1]).unsqueeze(0).expand(x.shape[0]), eot_idx)
+        # gather_idx = torch.cat((eot_idx, gather_idx), dim=1).unsqueeze(-1).unsqueeze(-1).expand_as(x)
+        x[torch.arange(x.shape[0]), eot_idx] = x1[:, 0]
+        x[:, 0] = x1[torch.arange(x.shape[0]), eot_idx]
 
-        # x.shape = [batch_size, n_ctx, transformer.width]
         # take global features from the eot embedding (eot_token is the highest number in each sequence)
-        # return x[torch.arange(x.shape[0]), :eot_idx], x[torch.arange(x.shape[0]), eot_idx]
-        return torch.cat(x[:, :eot_idx], x[:, eot_idx+1:], dim=1), x[:, eot_idx]
+        # return mask_tensor(x, eot_idx), x[torch.arange(x.shape[0]), eot_idx]
+        return x[:, 1:, :], x[:, 0, :]
     
 class ImageEncoder(nn.Module):
     def __init__(self, clip_model):
