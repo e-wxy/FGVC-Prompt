@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 
 from torch import optim as optim
+import ast
 
 
 def build_partial_optimizer(model, opt_keys: list, freeze_keys: list, optimizer_name: str, optimizer_params: dict):
@@ -52,7 +53,7 @@ def build_optimizer(train_cfg, model):
         skip_keywords = model.no_weight_decay_keywords()
     model_params = set_weight_decay(model, skip, skip_keywords)
 
-    optimizer = getattr(optim, train_cfg.OPTIMIZER.NAME)(model_params, **train_cfg.OPTIMIZER.PARAMS)
+    optimizer = getattr(optim, train_cfg.OPTIMIZER.NAME)(model_params, **ast.literal_eval(train_cfg.OPTIMIZER.PARAMS))
 
     return optimizer
 

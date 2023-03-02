@@ -37,7 +37,7 @@ class Trainer(object):
         loss_meter = AverageMeter()
 
 
-        self.logger.info("============ Stage ONE Start [{self.stages[-1]} Epochs] ============")
+        self.logger.info("============ Stage ONE Start [{} Epochs] ============".format(self.stages[-1]))
         model.train()
 
         for epoch in range(self.stages[-1]):
@@ -99,7 +99,7 @@ class Trainer(object):
         acc_meter = AverageMeter()
 
 
-        self.logger.info("============ Stage TWO Start [{self.stages[-1]} Epochs] ============")
+        self.logger.info("============ Stage TWO Start [{} Epochs] ============".format(self.stages[-1]))
         model.train()
 
         for epoch in range(self.stages[-1]):

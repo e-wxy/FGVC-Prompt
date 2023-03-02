@@ -1,11 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
-_tokenizer = _Tokenizer()
 from .clip import clip
 
-from typing import List
 from collections import OrderedDict
 import os
 
@@ -41,7 +38,7 @@ class TextEncoder(nn.Module):
         self.ln_final = clip_model.ln_final
         self.dtype = clip_model.dtype
 
-    def forward(self, text: List(str)): 
+    def forward(self, text): 
         x = self.token_embedding(text).type(self.dtype)
         eot_idx = x.argmax(dim=-1)
         x = x + self.positional_embedding.type(self.dtype) 
@@ -53,7 +50,6 @@ class TextEncoder(nn.Module):
         # x.shape = [batch_size, n_ctx, transformer.width]
         # take global features from the eot embedding (eot_token is the highest number in each sequence)
         # return x[torch.arange(x.shape[0]), :eot_idx], x[torch.arange(x.shape[0]), eot_idx]
-        # 与 0 交换
         return torch.cat(x[:, :eot_idx], x[:, eot_idx+1:], dim=1), x[:, eot_idx]
     
 class ImageEncoder(nn.Module):
@@ -80,7 +76,7 @@ class ImageEncoder(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # [L, B, D] -> [B, L, D]
 
-        x = self.ln_post()
+        x = self.ln_post(x)
 
         return x[:, 1:, :], x[:, 0, :]
 
@@ -95,7 +91,7 @@ class TokenCLIP(nn.Module):
         self.embed_dim = clip_model.visual.output_dim
         self.dtype = clip_model.dtype
 
-    def forward(self, image: torch.Tensor, text: List(str)):
+    def forward(self, image: torch.Tensor, text):
         # B1 = B2
         # [B1, L1, D], [B1, D]
         patch_features, image_features = self.image_encoder(image.type(self.dtype))
@@ -114,7 +110,7 @@ class SimCLIP(nn.Module):
         self.lamb = cfg.MODEL.LAMB
 
 
-    def forward(self, image: torch.Tensor, text: List(str)):
+    def forward(self, image: torch.Tensor, text):
         patch_features, image_features, word_features, text_features = self.encoder(image, text)
         # Compute Similarity
         sim_g = image_features @ text_features.t()  # [B1, B2]
@@ -144,7 +140,7 @@ class ClsCLIP(nn.Module):
         self.encoder = clip_model
         self.dtype = clip_model.dtype
         self.classifier = nn.Sequential(OrderedDict([
-                            ('ln', nn.LayerNorm(clip_model.embed_dim))
+                            ('ln', nn.LayerNorm(clip_model.embed_dim)), 
                             ('linear1', nn.Linear(clip_model.embed_dim, cfg.MODEL.HIDDEN_DIM)),
                             ('act', nn.ReLU(inplace=True)),
                             ('linear2', nn.Linear(cfg.MODEL.HIDDEN_DIM, cfg.MODEL.CLASS_NUM)),

@@ -4,18 +4,20 @@ import numpy as np
 from PIL import Image
 import pandas as pd
 import torch.utils.data as data
+from model.clip.clip import tokenize
     
     
 def get_dataframe(root, train=True):
-    attri_dir = os.path.join(root, 'CUB_200_2011', 'attributes')
+    root = os.path.join(root, 'CUB_200_2011')
+    attri_dir = os.path.join(root, 'attributes')
     attri_file = os.path.join(attri_dir, 'attributes.txt')
     label_file = os.path.join(attri_dir, 'image_attribute_labels_clean.txt') # `image_attribute_labels_clean.txt` remove the rudundent '0' from `image_attribute_labels.txt`
     # read from file
-    df_img_name = pd.read_csv(os.join(root, 'images.txt'), sep=' ', header=None, names=['image_id', 'image_name'])
-    df_class_label = pd.read_csv(os.join(root, 'image_class_labels.txt'), sep=' ', header=None, names=['image_id', 'class_id'])
+    df_img_name = pd.read_csv(os.path.join(root, 'images.txt'), sep=' ', header=None, names=['image_id', 'image_name'])
+    df_class_label = pd.read_csv(os.path.join(root, 'image_class_labels.txt'), sep=' ', header=None, names=['image_id', 'class_id'])
     df_attri = pd.read_csv(attri_file, sep=' ', header=None, names=['attribute_id', 'description'])
     df_attri_label = pd.read_csv(label_file, sep=' ', header=None, names=['image_id', 'attribute_id', 'is_present', 'certainty_id', 'time'])
-    df_train = pd.read_csv(os.join(root, 'train_text_split.txt'), sep=' ', header=None, names=['image_id', 'is_training_image'])
+    df_train = pd.read_csv(os.path.join(root, 'train_test_split.txt'), sep=' ', header=None, names=['image_id', 'is_training_image'])
     # pre-process
     # attribute -> text
     df_attri['description'] = df_attri['description'].apply(lambda x: x.replace('has_', '').replace('_', ' ').replace('::', ' is '))
@@ -129,6 +131,7 @@ class CUBDataset(data.Dataset):
             des_idxes = self.text_transform(des_idxes)
 
         text = self.prompt_start + self.prompt_link.join([des_list[des_idx] for des_idx in des_idxes]) + "."
+        text = tokenize(text)
 
         return img, text, target
 

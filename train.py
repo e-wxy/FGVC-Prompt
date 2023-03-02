@@ -2,6 +2,7 @@ from utils.logger import create_logger
 from data import build_dataloader
 from model import build_training_model, build_cls_model
 from solver import build_scheduler, build_optimizer, Trainer, build_partial_optimizer
+import ast
 from loss import build_criterion
 import random
 import torch
@@ -9,6 +10,7 @@ import numpy as np
 import os
 import argparse
 from config import cfg
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -21,7 +23,8 @@ def set_seed(seed):
 
 
 def main(cfg, logger):
-    # Data  
+    # Data
+    logger.info("Building Dataset")
     train_loader = build_dataloader(cfg, True)
     test_loader = build_dataloader(cfg, False)
 
@@ -29,25 +32,30 @@ def main(cfg, logger):
 
 
     # Training Stage One
+    logger.info("Building the model for stage 1")
     model = build_training_model(cfg)
+    logger.info("Move to cuda")
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()        # move to GPU before dist
+    logger.info("Dist model")
     if cfg.DEVICE.DIST:
-        model = DDP(model, device_ids=[cfg.LOCAL_RANK])
+        model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
 
+    logger.info("Training settings")
     criterion_1 = build_criterion(cfg, stage=1)
     optimizer_1 = build_optimizer(cfg.TRAIN.STAGE1, model)
     scheduler_1 = build_scheduler(cfg.TRAIN.STAGE1, optimizer_1, len(train_loader))
 
     trainer.train_one('pair', model, train_loader, test_loader, criterion_1, optimizer_1, scheduler_1, cfg.TRAIN.STAGE1)
 
-    # Training Stage Two
+    # Training Stage 
+    logger.info("Building the model for stage 2")
     model = build_cls_model(cfg, model.encoder)
     if cfg.DEVICE.DIST:
         model = DDP(model, device_ids=[cfg.LOCAL_RANK])
 
     criterion_2 = build_criterion(cfg, stage=2)
-    optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS)
+    optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, ast.literal_eval(cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS))
     scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, len(train_loader)) # check n_iters
 
     trainer.train_two('classification', model, train_loader, test_loader, criterion_2, optimizer_2, scheduler_2, cfg.TRAIN.STAGE2)
@@ -72,7 +80,7 @@ if __name__ == '__main__':
     # parser.add_argument("--local_rank", default=0, type=int)
     args = parser.parse_args()
 
-    if args.config_file != "":
+    if args.cfg_file != "":
         cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
@@ -81,11 +89,10 @@ if __name__ == '__main__':
 
     # Initialize Dist
     if cfg.DEVICE.DIST:
-        from torch.nn.parallel import DistributedDataParallel as DDP
         cfg.defrost()
         cfg.DEVICE.LOCAL_RANK = int(os.environ["LOCAL_RANK"])
         cfg.freeze()
-        torch.cuda.set_device(cfg.LOCAL_RANK)   # args.local_rank
+        torch.cuda.set_device(cfg.DEVICE.LOCAL_RANK)   # args.local_rank
         # if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         rank = int(os.environ["RANK"])
         world_size = int(os.environ['WORLD_SIZE'])
@@ -93,13 +100,16 @@ if __name__ == '__main__':
 
         torch.distributed.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
         torch.distributed.barrier()
+    else:
+        rank = 0
 
     # Setting Output Directory
     output_dir = cfg.OUTPUT_DIR
     if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        if rank == 0:
+            os.makedirs(output_dir)
 
-    logger = create_logger(os.path.join(output_dir, 'logs'), disk_rank=rank, name=args.name)
+    logger = create_logger(os.path.join(output_dir, 'logs'), dist_rank=rank, name=args.name)
     logger.info(args.info)
     # logger.info(args)
     # if args.config_file != "":

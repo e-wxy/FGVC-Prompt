@@ -1,4 +1,4 @@
-from model import TokenCLIP, SimCLIP, ClsCLIP
+from .model import TokenCLIP, SimCLIP, ClsCLIP
 
 
 def build_training_model(cfg):

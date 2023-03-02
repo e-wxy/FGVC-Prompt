@@ -1,7 +1,7 @@
 import os
 from torchvision import transforms
 from timm.data import create_transform
-from timm.data.transforms import _pil_interp
+from timm.data.transforms import str_to_pil_interp
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import torch.distributed as dist
 from torch.utils import data
@@ -70,7 +70,7 @@ def build_transform(cfg, is_train=True):
         if cfg.DATA.DATALOADER.TEST_CROP:
             size = int((256 / 224) * cfg.DATA.DATALOADER.IMG_SIZE)
             t.append(
-                transforms.Resize(size, interpolation=_pil_interp(
+                transforms.Resize(size, interpolation=str_to_pil_interp(
                     cfg.DATA.DATALOADER.INTERPOLATION)),
                 # to maintain same ratio w.r.t. 224 images
             )
@@ -78,7 +78,7 @@ def build_transform(cfg, is_train=True):
         else:
             t.append(
                 transforms.Resize((cfg.DATA.DATALOADER.IMG_SIZE, cfg.DATA.DATALOADER.IMG_SIZE),
-                                  interpolation=_pil_interp(cfg.DATA.DATALOADER.INTERPOLATION))
+                                  interpolation=str_to_pil_interp(cfg.DATA.DATALOADER.INTERPOLATION))
             )
 
     t.append(transforms.ToTensor())

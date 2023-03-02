@@ -89,23 +89,15 @@ _C.DATA.AUG.MIXUP_SWITCH_PROB = 0.5
 # How to apply mixup/cutmix params. Per "batch", "pair", or "elem"
 _C.DATA.AUG.MIXUP_MODE = 'batch'
 
-# Random probability for image horizontal flip
-_C.INPUT.PROB = 0.5
-# Random probability for random erasing
-_C.INPUT.RE_PROB = 0.5
-# Values to be used for image normalization
-_C.INPUT.PIXEL_MEAN = [0.485, 0.456, 0.406]
-# Values to be used for image normalization
-_C.INPUT.PIXEL_STD = [0.229, 0.224, 0.225]
-# Value of padding size
-_C.INPUT.PADDING = 10
-
 
 # -----------------------------------------------------------------------------
 # TRAIN
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
 _C.TRAIN.SEED = 123
+# Weights for similarity
+_C.TRAIN.SIM_GWEIGHTS = 0.5
+
 _C.TRAIN.START_EPOCH = 0
 _C.TRAIN.MAX_EPOCHS = 300
 _C.TRAIN.WARMUP_EPOCHS = 20
@@ -138,8 +130,6 @@ _C.TRAIN.LABEL_SMOOTHING = 0.1
 # STAGE 1
 # -----------------------------------------------------------------------------
 _C.TRAIN.STAGE1 = CN()
-# Weights for similarity
-_C.TRAIN.STAGE1.SIM_GWEIGHTS = 0.5
 
 _C.TRAIN.STAGE1.START_EPOCH = 0
 _C.TRAIN.STAGE1.MAX_EPOCHS = 300
@@ -149,14 +139,16 @@ _C.TRAIN.STAGE1.BASE_LR = 5e-4
 _C.TRAIN.STAGE1.WARMUP_LR = 5e-7
 _C.TRAIN.STAGE1.MIN_LR = 5e-6
 # Scheduler
+_C.TRAIN.STAGE1.SCHEDULER = CN()
 _C.TRAIN.STAGE1.SCHEDULER.NAME = 'cosine'
-# scheduler(optimizer, **params)
-_C.TRAIN.STAGE1.SCHEDULER.PARAMS = {}
+# # scheduler(optimizer, **params)
+# _C.TRAIN.STAGE1.SCHEDULER.PARAMS = {}
 # Optimizer
-_C.TRAIN.STAGE1.OPTIMIZER.NAME = 'adamw'
+_C.TRAIN.STAGE1.OPTIMIZER = CN()
+_C.TRAIN.STAGE1.OPTIMIZER.NAME = 'AdamW'
 # optimizer(model.parameters(), **params)
-_C.TRAIN.STAGE1.OPTIMIZER.PARAMS = {'lr': 5e-4, 'weight_decay': 1e-4, 'eps': 1e-8, 'betas': (0.9, 0.999)}
-# _C.TRAIN.STAGE1.OPTIMIZER.PARAMS = {'lr': 5e-4, 'weight_decay': 1e-4, 'momentum': 0.9, 'nesterov': True}
+_C.TRAIN.STAGE1.OPTIMIZER.PARAMS = "{'lr': 5e-4, 'weight_decay': 1e-4, 'eps': 1e-8, 'betas': (0.9, 0.999)}"
+# _C.TRAIN.STAGE1.OPTIMIZER.PARAMS = "{'lr': 5e-4, 'weight_decay': 1e-4, 'momentum': 0.9, 'nesterov': True}"
 
 # Intervals of checkpoint, log, eval
 _C.TRAIN.STAGE1.LOG_PERIOD = 1
@@ -177,13 +169,16 @@ _C.TRAIN.STAGE2.BASE_LR = 5e-4
 _C.TRAIN.STAGE2.WARMUP_LR = 5e-7
 _C.TRAIN.STAGE2.MIN_LR = 5e-6
 # Scheduler
+_C.TRAIN.STAGE2.SCHEDULER = CN()
 _C.TRAIN.STAGE2.SCHEDULER.NAME = 'cosine'
-# scheduler(optimizer, **params)
-_C.TRAIN.STAGE2.SCHEDULER.PARAMS = {}
+# # scheduler(optimizer, **params)
+# _C.TRAIN.STAGE2.SCHEDULER.PARAMS = {}
 # Optimizer
-_C.TRAIN.STAGE2.OPTIMIZER.NAME = 'adamw'
+_C.TRAIN.STAGE2.OPTIMIZER = CN()
+_C.TRAIN.STAGE2.OPTIMIZER.NAME = 'AdamW'
 # optimizer(model.parameters(), **params)
-_C.TRAIN.STAGE2.OPTIMIZER.PARAMS = {'lr': 5e-4, 'weight_decay': 1e-4, 'eps': 1e-8, 'betas': (0.9, 0.999)}
+_C.TRAIN.STAGE2.OPTIMIZER.PARAMS = "{'lr': 5e-4, 'weight_decay': 1e-4, 'eps': 1e-8, 'betas': (0.9, 0.999)}"
+# _C.TRAIN.STAGE2.OPTIMIZER.PARAMS = "lr = 5e-4, weight_decay = 1e-4, eps = 1e-8, betas = (0.9, 0.999)"
 
 # Intervals of checkpoint, log, eval
 _C.TRAIN.STAGE2.LOG_PERIOD = 1
@@ -204,7 +199,7 @@ _C.DEVICE = CN()
 _C.DEVICE.NAME = 'cuda'
 # If has multi GPUs, options: 'True', 'False'
 _C.DEVICE.DIST = True
-_C.LOCAL_RANK = 0
+_C.DEVICE.LOCAL_RANK = 0
 
 # ---------------------------------------------------------------------------- #
 # Misc options

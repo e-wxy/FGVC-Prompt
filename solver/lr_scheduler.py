@@ -20,7 +20,6 @@ def build_scheduler(train_cfg, optimizer, n_iter_per_epoch):
         lr_scheduler = CosineLRScheduler(
             optimizer,
             t_initial=num_steps,
-            t_mul=1.,
             lr_min=train_cfg.MIN_LR,
             warmup_lr_init=train_cfg.WARMUP_LR,
             warmup_t=warmup_steps,
