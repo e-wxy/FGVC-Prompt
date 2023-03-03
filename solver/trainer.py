@@ -35,6 +35,7 @@ class Trainer(object):
         eval_period = train_cfg.EVAL_PERIOD
         self.stages.append(train_cfg.MAX_EPOCHS)
         loss_meter = AverageMeter()
+        best_metric = 1e6
 
 
         self.logger.info("============ Stage ONE Start [{} Epochs] ============".format(self.stages[-1]))
@@ -78,10 +79,13 @@ class Trainer(object):
                 test_loss = self.cal_loss(model, valid_loader, criterion)
                 self.test_loss.append(test_loss)
                 self.logger.info("Epoch {:3d}: test_loss: {:.5f}".format(epoch+1, test_loss))
+                if test_loss < best_metric:
+                    self.save_state_dict(model, "{}.pt".format("best_1"))
+                    best_metric = test_loss
                 model.train()
 
         test_loss = self.cal_loss(model, valid_loader, criterion)
-        self.logger.info("Training Stage ONE End: train_loss: {:.5f} test_loss: {:.5f}".format(loss_meter.avg, test_loss))
+        self.logger.info("Training Stage ONE End: train_loss: {:.5f} test_loss: {:.5f} best_loss: {:.5f}".format(loss_meter.avg, test_loss, best_metric))
         self.save_state_dict(model, "{}.pt".format(save_name))
 
     def train_two(self, save_name: str, model, train_loader, valid_loader, criterion, optimizer, scheduler, train_cfg):
@@ -99,6 +103,7 @@ class Trainer(object):
         self.stages.append(train_cfg.MAX_EPOCHS)
         loss_meter = AverageMeter()
         acc_meter = AverageMeter()
+        best_metric = 0
 
 
         self.logger.info("============ Stage TWO Start [{} Epochs] ============".format(self.stages[-1]))
@@ -147,10 +152,13 @@ class Trainer(object):
                 test_acc = self.eval(model, valid_loader)
                 self.test_acc.append(test_acc)
                 self.logger.info("Epoch {:3d}: test_acc: {:.3f}%".format(epoch+1, test_acc))
+                if test_acc > best_metric:
+                    self.save_state_dict(model, "{}.pt".format("best_2"))
+                    best_metric = test_acc
                 model.train()
 
         test_acc = self.eval(model, valid_loader)
-        self.logger.info("Training Stage TWO End: train_loss: {:.5f} train_acc: {:.3f}% test_acc: {:.3f}%".format(loss_meter.avg, acc_meter.avg, test_acc))
+        self.logger.info("Training Stage TWO End: train_loss: {:.5f} train_acc: {:.3f}% test_acc: {:.3f}% best_acc: {:.3f}%".format(loss_meter.avg, acc_meter.avg, test_acc, best_metric))
         self.save_state_dict(model, "{}.pt".format(save_name))
 
 

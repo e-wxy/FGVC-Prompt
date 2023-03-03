@@ -1,5 +1,5 @@
 from torch import optim as optim
-import ast
+from .misc import make_params_dict
 
 
 def build_partial_optimizer(model, opt_keys: list, freeze_keys: list, optimizer_name: str, optimizer_params: dict):
@@ -29,7 +29,7 @@ def build_partial_optimizer(model, opt_keys: list, freeze_keys: list, optimizer_
         #     if freeze_key in key:
         #         value.requires_grad = False
 
-    optimizer = getattr(optim, optimizer_name)(params, **optimizer_params)
+    optimizer = getattr(optim, optimizer_name)(params, **make_params_dict(optimizer_params))
 
     return optimizer
 
@@ -46,7 +46,7 @@ def build_optimizer(train_cfg, model):
         skip_keywords = model.no_weight_decay_keywords()
     model_params = set_weight_decay(model, skip, skip_keywords)
 
-    optimizer = getattr(optim, train_cfg.OPTIMIZER.NAME)(model_params, **ast.literal_eval(train_cfg.OPTIMIZER.PARAMS))
+    optimizer = getattr(optim, train_cfg.OPTIMIZER.NAME)(model_params, **make_params_dict(train_cfg.OPTIMIZER.PARAMS))
 
     return optimizer
 

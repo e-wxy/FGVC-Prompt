@@ -134,7 +134,7 @@ _C.TRAIN.STAGE1.SCHEDULER.NAME = 'cosine'
 _C.TRAIN.STAGE1.OPTIMIZER = CN()
 _C.TRAIN.STAGE1.OPTIMIZER.NAME = 'AdamW'
 # optimizer(model.parameters(), **params)
-_C.TRAIN.STAGE1.OPTIMIZER.PARAMS = "{'lr': 5e-4, 'weight_decay': 1e-4, 'eps': 1e-8, 'betas': (0.9, 0.999)}"
+_C.TRAIN.STAGE1.OPTIMIZER.PARAMS = "lr = 5e-4; weight_decay = 1e-4; eps = 1e-8; betas = (0.9, 0.999)"
 # _C.TRAIN.STAGE1.OPTIMIZER.PARAMS = "{'lr': 5e-4, 'weight_decay': 1e-4, 'momentum': 0.9, 'nesterov': True}"
 
 # Intervals of checkpoint, log, eval
@@ -164,7 +164,7 @@ _C.TRAIN.STAGE2.SCHEDULER.NAME = 'cosine'
 _C.TRAIN.STAGE2.OPTIMIZER = CN()
 _C.TRAIN.STAGE2.OPTIMIZER.NAME = 'AdamW'
 # optimizer(model.parameters(), **params)
-_C.TRAIN.STAGE2.OPTIMIZER.PARAMS = "{'lr': 5e-4, 'weight_decay': 1e-4, 'eps': 1e-8, 'betas': (0.9, 0.999)}"
+_C.TRAIN.STAGE2.OPTIMIZER.PARAMS = "lr = 5e-4; weight_decay = 1e-4; eps = 1e-8; betas = (0.9, 0.999)"
 # _C.TRAIN.STAGE2.OPTIMIZER.PARAMS = "lr = 5e-4, weight_decay = 1e-4, eps = 1e-8, betas = (0.9, 0.999)"
 
 # Intervals of checkpoint, log, eval

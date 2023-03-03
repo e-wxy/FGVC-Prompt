@@ -2,7 +2,6 @@ from utils.logger import create_logger
 from data import build_dataloader
 from model import build_training_model, build_cls_model
 from solver import build_scheduler, build_optimizer, Trainer, build_partial_optimizer
-import ast
 from loss import build_criterion
 import random
 import torch
@@ -33,17 +32,22 @@ def main(cfg, logger):
 
     # Loading Stage One Model
     model = build_training_model(cfg)
-    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, cfg.MODEL.PRETRAIN_FILE)))
+    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'model/pair.pt')))
+    logger.info("Load stage 1 success!")
 
     # Training Stage Two
     model = build_cls_model(cfg, model.encoder)
+
+    # model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'model/classification.pt')))
+    # logger.info("Load stage 2 success!")
+    
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()
     if cfg.DEVICE.DIST:
         model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
 
     criterion_2 = build_criterion(cfg, stage=2)
-    optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, ast.literal_eval(cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS))
+    optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS)
     scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, len(train_loader)) # check n_iters
 
     trainer.train_two('classification', model, train_loader, test_loader, criterion_2, optimizer_2, scheduler_2, cfg.TRAIN.STAGE2)

@@ -17,13 +17,13 @@ tqdm
 
 ## Train
 
-Run locally
+### Run locally
 
 ```
 torchrun --nproc_per_node=2 train.py -n "test1" -c configs/cub.yml MODEL.PRETRAIN_FILE 'ViT-B-16.pt' MODEL.PRETRAIN_PATH './pretrained'
 ```
 
-Run on virtaicloud
+### Run on virtaicloud
 ```
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
 -n "test1" -i "First Try"   \
@@ -31,17 +31,34 @@ torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
 ```
-
-Fine-Tune
+Dev
 ```
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
+-n "test1_2" -i "Check stage 1"   \
+-c $GEMINI_RUN/Prompt/configs/cub.yml   \
+OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
+MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN \
+TRAIN.STAGE1.MAX_EPOCHS 5 TRAIN.STAGE2.MAX_EPOCHS 100
+```
+
+### Fine-Tune
+```
+torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
 -n "test2" -i "Tuning stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
-MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'model/pair.pt'
+MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN
+```
+Dev
+```
+torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
+-n "test3" -i "Tuning stage 2"   \
+-c $GEMINI_RUN/Prompt/configs/cub.yml   \
+OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
+MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
 ```
 
 
 ## Acknowledgement
 
-Codebase from [CoOp](https://github.com/KaiyangZhou/CoOp)
+Codebase from [CLIP](https://github.com/openai/CLIP), [Swin-Transformer](https://github.com/microsoft/Swin-Transformer)
