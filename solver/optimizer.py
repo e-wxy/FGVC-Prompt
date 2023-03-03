@@ -1,10 +1,3 @@
-# --------------------------------------------------------
-# Swin Transformer
-# Copyright (c) 2021 Microsoft
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Ze Liu
-# --------------------------------------------------------
-
 from torch import optim as optim
 import ast
 
@@ -15,7 +8,7 @@ def build_partial_optimizer(model, opt_keys: list, freeze_keys: list, optimizer_
     Args:
         model (nn.Module)
         opt_keys (list): keys of params that need to be optimized
-        freeze_keys (list): keys of params that don't need grad
+        freeze_keys (list): keys of params that don't need grad (seems to fail to work on DDP)
         optimizer_name (str): name of optimizer in torch.optim
         optimizer_params (dict): params(lr, weight_decay) that pass to optimizer
 
@@ -32,9 +25,9 @@ def build_partial_optimizer(model, opt_keys: list, freeze_keys: list, optimizer_
                 params += [{"params": [value]}]
                 keys += [key]
                 continue
-        for freeze_key in freeze_keys:
-            if freeze_key in key:
-                value.requires_grad_(False)
+        # for freeze_key in freeze_keys:
+        #     if freeze_key in key:
+        #         value.requires_grad = False
 
     optimizer = getattr(optim, optimizer_name)(params, **optimizer_params)
 

@@ -43,7 +43,7 @@ _C.DATA = CN()
 _C.DATA.DATASET = CN()
 _C.DATA.DATASET.NAME = 'cub'
 _C.DATA.DATASET.ROOT_DIR = './datasets'
-_C.DATA.DATASET.META = None
+_C.DATA.DATASET.DROP_RATE = 0.4
 
 # -----------------------------------------------------------------------------
 # DataLoader
@@ -51,7 +51,7 @@ _C.DATA.DATASET.META = None
 _C.DATA.DATALOADER = CN()
 _C.DATA.DATALOADER.NUM_WORKERS = 8
 _C.DATA.DATALOADER.BATCH_SIZE = 16
-_C.DATA.DATALOADER.TEST_BATCH_SIZE = 16
+_C.DATA.DATALOADER.TEST_BATCH_SIZE = 128
 _C.DATA.DATALOADER.TEST_CROP = True
 _C.DATA.DATALOADER.IMG_SIZE = 224
 # Interpolation to resize image (random, bilinear, bicubic)
@@ -95,24 +95,11 @@ _C.DATA.AUG.MIXUP_MODE = 'batch'
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
 _C.TRAIN.SEED = 123
-# Weights for similarity
+# Weights for similarity: 
+# loss = loss_g * SIM_GWEIGHTS + (loss_v + loss_t) * (1 - SIM_GWEIGHTS) / 2
 _C.TRAIN.SIM_GWEIGHTS = 0.5
-
-_C.TRAIN.START_EPOCH = 0
-_C.TRAIN.MAX_EPOCHS = 300
-_C.TRAIN.WARMUP_EPOCHS = 20
-_C.TRAIN.WEIGHT_DECAY = 0.05
-_C.TRAIN.BASE_LR = 5e-4
-_C.TRAIN.WARMUP_LR = 5e-7
-_C.TRAIN.MIN_LR = 5e-6
-# Intervals of checkpoint, log, eval
-_C.TRAIN.LOG_PERIOD = 100
-_C.TRAIN.EVAL_PERIOD = 10
-_C.TRAIN.CHECKPOINT_PERIOD = 10
-_C.TRAIN.USE_CHECKPOINT = False
 # Auto resume from latest checkpoint
 _C.TRAIN.AUTO_RESUME = True
-
 # Gradient Accumulation
 # IMS_PER_BATCH = ACCUMULATION_STEPS * DATALOADER.BATCH_SIZE
 _C.TRAIN.IMS_PER_BATCH = 16

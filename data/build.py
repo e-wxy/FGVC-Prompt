@@ -6,9 +6,14 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import torch.distributed as dist
 from torch.utils import data
 
-from .cub_text import CUBDataset
+from .cub_text import CUBDataset, RandomPermutateDrop
 
 def build_dataloader(cfg, is_train=True):
+    if is_train:
+        batch_size = cfg.DATA.DATALOADER.BATCH_SIZE
+    else:
+        batch_size = cfg.DATA.DATALOADER.TEST_BATCH_SIZE
+
     dataset = build_dataset(cfg, is_train)
     if cfg.DEVICE.DIST:
         sampler = data.DistributedSampler(
@@ -20,7 +25,7 @@ def build_dataloader(cfg, is_train=True):
         data_loader = data.DataLoader(
             dataset,
             sampler=sampler,
-            batch_size=cfg.DATA.DATALOADER.BATCH_SIZE,
+            batch_size=batch_size,
             num_workers=cfg.DATA.DATALOADER.NUM_WORKERS,
             pin_memory=cfg.DATA.DATALOADER.PIN_MEMORY,
             drop_last=True,
@@ -29,7 +34,7 @@ def build_dataloader(cfg, is_train=True):
         data_loader = data.DataLoader(
             dataset,
             shuffle=True,
-            batch_size=cfg.DATA.DATALOADER.BATCH_SIZE,
+            batch_size=batch_size,
             num_workers=cfg.DATA.DATALOADER.NUM_WORKERS,
             pin_memory=cfg.DATA.DATALOADER.PIN_MEMORY,
             drop_last=True,
@@ -41,7 +46,7 @@ def build_dataset(cfg, is_train=True):
     transform = build_transform(cfg, is_train)
     root = cfg.DATA.DATASET.ROOT_DIR
     if cfg.DATA.DATASET.NAME == 'cub':
-        dataset = CUBDataset(os.path.join(root, 'cub2002011'), transform, cfg.DATA.DATASET.META, is_train)
+        dataset = CUBDataset(os.path.join(root, 'cub2002011'), transform, RandomPermutateDrop(cfg.DATA.DATASET.DROP_RATE), is_train)
     return dataset
 
 def build_transform(cfg, is_train=True):

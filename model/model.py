@@ -6,36 +6,6 @@ from .clip import clip
 from collections import OrderedDict
 import os
 
-def weights_init_kaiming(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
-        nn.init.constant_(m.bias, 0.0)
-
-    elif classname.find('Conv') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0.0)
-    elif classname.find('BatchNorm') != -1:
-        if m.affine:
-            nn.init.constant_(m.weight, 1.0)
-            nn.init.constant_(m.bias, 0.0)
-
-def weights_init_classifier(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.normal_(m.weight, std=0.001)
-        if m.bias:
-            nn.init.constant_(m.bias, 0.0)
-
-def mask_tensor(tensor, indices):
-    """ Mask global feature at dim 1"""
-    mask = torch.ones((tensor.shape[0], tensor.shape[1]), dtype=torch.bool)
-    mask[torch.arange(tensor.shape[0]), indices] = False
-    mask = mask.unsqueeze(-1).unsqueeze(-1).expand_as(tensor)
-    return tensor[mask].reshape((tensor.shape[0], tensor.shape[1]-1, tensor.shape[2], tensor.shape[3]))
-
-
 class TextEncoder(nn.Module):
     def __init__(self, clip_model):
         super().__init__()
@@ -43,16 +13,19 @@ class TextEncoder(nn.Module):
         self.token_embedding = clip_model.token_embedding
         self.transformer = clip_model.transformer
         self.ln_final = clip_model.ln_final
+        self.text_proj = clip_model.text_projection
         self.dtype = clip_model.dtype
 
     def forward(self, text): 
-        x = self.token_embedding(text).type(self.dtype).squeeze()
-        eot_idx = x.argmax(dim=-1)
+        eot_idx = text.argmax(dim=-1)
+        x = self.token_embedding(text).type(self.dtype)
         x = x + self.positional_embedding.type(self.dtype) 
         x = x.permute(1, 0, 2)  # BLD -> LBD
         x = self.transformer(x) 
         x = x.permute(1, 0, 2)  # LBD -> BLD
-        x = self.ln_final(x).type(self.dtype) 
+        x = self.ln_final(x).type(self.dtype)
+        x = torch.matmul(x, self.text_proj)     # [B, L, 512] -> [B, L, 512]
+
         x1 = x.clone()
         # gather_idx = mask_tensor(torch.arange(x.shape[1]).unsqueeze(0).expand(x.shape[0]), eot_idx)
         # gather_idx = torch.cat((eot_idx, gather_idx), dim=1).unsqueeze(-1).unsqueeze(-1).expand_as(x)
@@ -72,6 +45,7 @@ class ImageEncoder(nn.Module):
         self.ln_pre = clip_model.visual.ln_pre
         self.transformer = clip_model.visual.transformer
         self.ln_post = clip_model.visual.ln_post
+        self.image_proj = clip_model.visual.proj
 
     def forward(self, x: torch.Tensor):
         x = self.patch_emb(x)   # [B, C, H, W] -> [B, D, H, W]
@@ -79,8 +53,6 @@ class ImageEncoder(nn.Module):
         x = x.permute(0, 2, 1)  # [B, H * W, D]
         x = torch.cat([self.cls_emb + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # [B, H * W + 1, D]
         x = x + self.pos_emb
-        # x = torch.cat([self.cls_emb.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # [B, H * W + 1, D]
-        # x = x + self.pos_emb.to(x.dtype)
         x = self.ln_pre(x)
 
         x = x.permute(1, 0, 2)  # [B, L, D] -> [L, B, D]
@@ -88,6 +60,7 @@ class ImageEncoder(nn.Module):
         x = x.permute(1, 0, 2)  # [L, B, D] -> [B, L, D]
 
         x = self.ln_post(x)
+        x = torch.matmul(x, self.image_proj)    # [B, L, 768] -> [B, L, 512]
 
         return x[:, 1:, :], x[:, 0, :]
 
@@ -102,7 +75,7 @@ class TokenCLIP(nn.Module):
         self.embed_dim = clip_model.visual.output_dim
         self.dtype = clip_model.dtype
 
-    def forward(self, image: torch.Tensor, text):
+    def forward(self, image: torch.Tensor, text: torch.Tensor):
         # B1 = B2
         # [B1, L1, D], [B1, D]
         patch_features, image_features = self.image_encoder(image.type(self.dtype))
@@ -112,6 +85,7 @@ class TokenCLIP(nn.Module):
         return patch_features, image_features, word_features, text_features
     
 class SimCLIP(nn.Module):
+    """ CLIP model that return similarities in forward() """
     def __init__(self, cfg, clip_model=None) -> None:
         super().__init__()
         if clip_model is not None:
@@ -121,7 +95,7 @@ class SimCLIP(nn.Module):
         self.lamb = cfg.MODEL.LAMB
 
 
-    def forward(self, image: torch.Tensor, text):
+    def forward(self, image: torch.Tensor, text: torch.Tensor):
         patch_features, image_features, word_features, text_features = self.encoder(image, text)
         # Compute Similarity
         sim_g = image_features @ text_features.t()  # [B1, B2]
@@ -146,6 +120,7 @@ class SimCLIP(nn.Module):
 
 
 class ClsCLIP(nn.Module):
+    """ CLIP model that fine tune for classification tasks """
     def __init__(self, cfg, clip_model):
         super().__init__()
         self.encoder = clip_model
@@ -174,6 +149,7 @@ def load_clip_to_cpu(cfg):
         url = clip._MODELS[backbone_name]
         model_path = clip._download(url)
     else:
+        # load local file
         model_path = os.path.join(cfg.MODEL.PRETRAIN_PATH, cfg.MODEL.PRETRAIN_FILE)
 
     try:
@@ -187,4 +163,35 @@ def load_clip_to_cpu(cfg):
     model = clip.build_model(state_dict or model.state_dict())
 
     return model
+
+
+def weights_init_kaiming(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
+        nn.init.constant_(m.bias, 0.0)
+
+    elif classname.find('Conv') != -1:
+        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0.0)
+    elif classname.find('BatchNorm') != -1:
+        if m.affine:
+            nn.init.constant_(m.weight, 1.0)
+            nn.init.constant_(m.bias, 0.0)
+
+def weights_init_classifier(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        nn.init.normal_(m.weight, std=0.001)
+        if m.bias:
+            nn.init.constant_(m.bias, 0.0)
+            
+
+def mask_tensor(tensor, indices):
+    """ Mask a tensor at dim 1"""
+    mask = torch.ones((tensor.shape[0], tensor.shape[1]), dtype=torch.bool)
+    mask[torch.arange(tensor.shape[0]), indices] = False
+    mask = mask.unsqueeze(-1).unsqueeze(-1).expand_as(tensor)
+    return tensor[mask].reshape((tensor.shape[0], tensor.shape[1]-1, tensor.shape[2], tensor.shape[3]))
 

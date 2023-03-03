@@ -43,14 +43,18 @@ def index_from_zero(df, index_name='image_id'):
 
 
 class RandomPermutateDrop(object):
-
     def __init__(self, drop_rate: float = 0.0):
+        """ Random permutate and drop attributes
+
+        Args:
+            drop_rate (float): dropout [0, drop_rate] of attributes.
+        """
         self.drop_rate = drop_rate
 
     def __call__(self, des_idxes):
         np.random.shuffle(des_idxes)
         length = len(des_idxes)
-        des_idxes = des_idxes[:length - int(length * np.random.randint(self.drop_rate))]
+        des_idxes = des_idxes[:length - int(length * np.random.uniform(self.drop_rate))]
         return des_idxes
     
 
@@ -131,7 +135,7 @@ class CUBDataset(data.Dataset):
             des_idxes = self.text_transform(des_idxes)
 
         text = self.prompt_start + self.prompt_link.join([des_list[des_idx] for des_idx in des_idxes]) + "."
-        text = tokenize(text)
+        text = tokenize(text).squeeze()
 
         return img, text, target
 

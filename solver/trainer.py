@@ -39,6 +39,7 @@ class Trainer(object):
 
         self.logger.info("============ Stage ONE Start [{} Epochs] ============".format(self.stages[-1]))
         model.train()
+        step = 0
 
         for epoch in range(self.stages[-1]):
             loss_meter.reset()
@@ -60,7 +61,8 @@ class Trainer(object):
                     loss.backward()
                     optimizer.step()
 
-                scheduler.step()
+                scheduler.step(step)
+                step += 1
 
                 torch.cuda.synchronize()
                 loss = reduce_tensor(loss)
@@ -75,11 +77,11 @@ class Trainer(object):
             if epoch % eval_period == 0:
                 test_loss = self.cal_loss(model, valid_loader, criterion)
                 self.test_loss.append(test_loss)
-                self.logger.info("Epoch {:3d}: test_loss: {:.3f}%".format(epoch+1, test_loss))
+                self.logger.info("Epoch {:3d}: test_loss: {:.5f}".format(epoch+1, test_loss))
                 model.train()
 
         test_loss = self.cal_loss(model, valid_loader, criterion)
-        self.logger.info("Training Stage ONE End: train_loss: {:.5f} test_loss: {:.3f}%".format(loss_meter.avg, test_loss))
+        self.logger.info("Training Stage ONE End: train_loss: {:.5f} test_loss: {:.5f}".format(loss_meter.avg, test_loss))
         self.save_state_dict(model, "{}.pt".format(save_name))
 
     def train_two(self, save_name: str, model, train_loader, valid_loader, criterion, optimizer, scheduler, train_cfg):
@@ -101,6 +103,7 @@ class Trainer(object):
 
         self.logger.info("============ Stage TWO Start [{} Epochs] ============".format(self.stages[-1]))
         model.train()
+        step = 0
 
         for epoch in range(self.stages[-1]):
             loss_meter.reset()
@@ -124,7 +127,8 @@ class Trainer(object):
                     optimizer.step()
 
                 acc = accuracy(z.data, label)[0]
-                scheduler.step()
+                scheduler.step(step)
+                step += 1
 
                 torch.cuda.synchronize()
                 loss = reduce_tensor(loss)
@@ -191,7 +195,7 @@ class Trainer(object):
         if not os.path.exists(file_path):
             os.makedirs(file_path)
         file_path = os.path.join(file_path, name)
-        if self.cfg.DIST == True:
+        if self.cfg.DEVICE.DIST == True:
             model = model.module
         torch.save(model, file_path)
     
@@ -200,13 +204,13 @@ class Trainer(object):
         if not os.path.exists(file_path):
             os.makedirs(file_path)
         file_path = os.path.join(file_path, name)
-        if self.cfg.DIST == True:
+        if self.cfg.DEVICE.DIST == True:
             model = model.module
         torch.save(model.state_dict(), file_path)
 
     def record_training_process(self):
         self.logger.info("============ Training Process Record============")
-        self.logger.info("Stages: {self.stages}")
+        self.logger.info("Stages: {}".format(self.stages))
         self.logger.info("\ntrain_loss = {}\ntest_loss = {}\ntrain_acc = {}\ntest_acc = {}".format(self.train_loss, self.test_loss, self.train_acc, self.test_acc))
 
 

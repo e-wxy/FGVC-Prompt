@@ -7,8 +7,8 @@ from .softmax_loss import CrossEntropyLabelSmooth, LabelSmoothingCrossEntropy
 
 def build_criterion(config, stage: int = 0):
     if stage == 1:
-        loss = TokenLoss(config.TRAIN.SIM_GWEIGHTS)
+        loss = TokenLoss(config.TRAIN.SIM_GWEIGHTS, config.DEVICE.LOCAL_RANK)
     else:
-        loss = CrossEntropyLabelSmooth()
+        loss = LabelSmoothingCrossEntropy()
 
     return loss

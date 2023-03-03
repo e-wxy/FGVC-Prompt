@@ -31,22 +31,11 @@ def main(cfg, logger):
     trainer = Trainer(cfg, logger)
 
 
-    # Training Stage One
+    # Loading Stage One Model
     model = build_training_model(cfg)
-    if cfg.DEVICE.NAME == "cuda":
-        model.cuda()    # Move to GPU before dist
-    if cfg.DEVICE.DIST:
-        model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
-
-    criterion_1 = build_criterion(cfg, stage=1)
-    optimizer_1 = build_optimizer(cfg.TRAIN.STAGE1, model)
-    scheduler_1 = build_scheduler(cfg.TRAIN.STAGE1, optimizer_1, len(train_loader))
-
-    trainer.train_one('pair', model, train_loader, test_loader, criterion_1, optimizer_1, scheduler_1, cfg.TRAIN.STAGE1)
+    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, cfg.MODEL.PRETRAIN_FILE)))
 
     # Training Stage Two
-    if cfg.DEVICE.DIST:
-        model = model.module
     model = build_cls_model(cfg, model.encoder)
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()
