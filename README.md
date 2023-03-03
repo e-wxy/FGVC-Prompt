@@ -1,6 +1,13 @@
 ﻿# Prompting Attributes for FGVC
 
+## Framework
+
+![Stage One](./figs/stage_1.png)
+
+![Stage Two](./figs/stage_2.png)
+
 ## Prerequisites
+
 ```
 pytorch
 torchvision
@@ -52,7 +59,7 @@ torchrun --nproc_per_node=2 train.py -n "test1" -c configs/cub.yml MODEL.PRETRAI
 ### Run on Virtaicloud
 ```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
--n "test1" -i "First Try"   \
+-n "test1" -i "First try"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
@@ -78,7 +85,7 @@ MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN
 Dev
 ```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
--n "test3" -i "Tuning stage 2"   \
+-n "test3" -i "Tuning lr for stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
@@ -94,12 +101,25 @@ MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
 
 ### 2. Classifier
 
-####  2. 1. Global Tokens Only
+####  2. 1. How to utilise features from all tokens?
+
+**Global Tokens Only**
 
 - element-wise multiplication
 - sum
 
-#### 2. 2. Blending Patches & Words
+**Blending Patches & Words**
+
+- TODO
+
+#### 2.2.  Classifier Structure
+
+- Hidden dim: `MODEL.HIDDEN_DIM`
+- Module
+
+#### 2.3. Ablation Study
+
+- [ ] Visual Only ->  Effect of Stage One
 
 ## Acknowledgement
 
