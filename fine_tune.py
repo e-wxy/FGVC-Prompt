@@ -27,6 +27,11 @@ def main(cfg, logger):
     train_loader = build_dataloader(cfg, True)
     test_loader = build_dataloader(cfg, False)
 
+    if cfg.DEVICE.DIST:
+        batch_per_epoch = (len(train_loader) + int(os.environ['WORLD_SIZE']) - 1) // int(os.environ['WORLD_SIZE'])
+    else:
+        batch_per_epoch = len(train_loader)
+
     trainer = Trainer(cfg, logger)
 
 
@@ -48,7 +53,7 @@ def main(cfg, logger):
 
     criterion_2 = build_criterion(cfg, stage=2)
     optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS)
-    scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, len(train_loader)) # check n_iters
+    scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, batch_per_epoch) # check n_iters
 
     trainer.train_two('classification', model, train_loader, test_loader, criterion_2, optimizer_2, scheduler_2, cfg.TRAIN.STAGE2)
 

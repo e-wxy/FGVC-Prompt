@@ -16,6 +16,7 @@ def build_scheduler(train_cfg, optimizer, n_iter_per_epoch):
     warmup_steps = int(train_cfg.WARMUP_EPOCHS * n_iter_per_epoch)
 
     lr_scheduler = None
+    # https://github.com/huggingface/pytorch-image-models/blob/main/timm/scheduler/cosine_lr.py#L18
     if train_cfg.SCHEDULER.NAME == 'cosine':
         lr_scheduler = CosineLRScheduler(
             optimizer,
