@@ -131,11 +131,15 @@ class ClsCLIP(nn.Module):
                             ('act', nn.ReLU(inplace=True)),
                             ('linear2', nn.Linear(cfg.MODEL.HIDDEN_DIM, cfg.MODEL.CLASS_NUM)),
                             ]))
+        self.classifier.apply(weights_init_kaiming)
 
     def forward(self, image, text):
-        # TODO:
         patch_features, image_features, word_features, text_features = self.encoder(image, text)
-        x = torch.mul(image_features, text_features)    # [B, D]
+        # TODO:
+        # # 1. element-wise multiplication
+        # x = torch.mul(image_features, text_features)    # [B, D]
+        # # 2. sum
+        x = image_features + text_features    # [B, D]
         x = self.classifier(x)
 
         return x

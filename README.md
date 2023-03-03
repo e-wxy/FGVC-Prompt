@@ -58,6 +58,16 @@ OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
 ```
 
+## To Tune
+
+### Hyper-Params for Prompting
+
+1. Dropout rate in text description: `DATA.DATASET.DROP_RATE`
+2. Temperature in TokenFlow: `MODEL.LAMB`
+
+### Classifier
+
+
 
 ## Acknowledgement
 
