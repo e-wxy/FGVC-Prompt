@@ -13,18 +13,44 @@ tqdm
 
 ## Dataset
 
-[Caltech-UCSD Birds-200-2011 (CUB-200-2011)](https://www.kaggle.com/datasets/wenewone/cub2002011)
+### Download
+
+[Caltech-UCSD Birds-200-2011 (CUB-200-2011)](http://www.vision.caltech.edu/datasets/cub_200_2011/)
+
+Alternative
+
+[CUB-200-2011 | Kaggle](https://www.kaggle.com/datasets/wenewone/cub2002011)
+
+Directory
+
+```
++---ROOT
+|   +---cub2002011/
+|   |   +---CUB_200_2011/		# from https://data.caltech.edu/records/20098
+|   |   |   +---attributes/
+|   |   |   |   +---attributes.txt		# NOTICE: attributes.txt has been moved to here
+|   |   |   |   +--- ...
+|   |   |   |   \---image_attribute_labels_clean.txt	# cleaned image_attribute_labels.txt
+|   |   |   +---images/
+|   |   |   +---parts/
+|   |   |   +---bounding_boxes.txt
+|   |   |   \--- ...
+|   |   +---cvpr2016_cub/	# unused at present
+|   |   \---segmentations/	# unused at present
+```
+
+
 
 ## Train
 
-### Run locally
+### Run Locally
 
-```
+```bash
 torchrun --nproc_per_node=2 train.py -n "test1" -c configs/cub.yml MODEL.PRETRAIN_FILE 'ViT-B-16.pt' MODEL.PRETRAIN_PATH './pretrained'
 ```
 
-### Run on virtaicloud
-```
+### Run on Virtaicloud
+```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
 -n "test1" -i "First Try"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
@@ -32,7 +58,7 @@ OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
 ```
 Dev
-```
+```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
 -n "test1_2" -i "Check stage 1"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
@@ -42,7 +68,7 @@ TRAIN.STAGE1.MAX_EPOCHS 5 TRAIN.STAGE2.MAX_EPOCHS 100
 ```
 
 ### Fine-Tune
-```
+```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
 -n "test2" -i "Tuning stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
@@ -50,7 +76,7 @@ OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN
 ```
 Dev
-```
+```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
 -n "test3" -i "Tuning stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
@@ -60,14 +86,20 @@ MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
 
 ## To Tune
 
-### Hyper-Params for Prompting
+### 1. Hyper-Params for Prompting
 
-1. Dropout rate in text description: `DATA.DATASET.DROP_RATE`
-2. Temperature in TokenFlow: `MODEL.LAMB`
+- Dropout rate in text description: `DATA.DATASET.DROP_RATE`
 
-### Classifier
+- Temperature in TokenFlow: `MODEL.LAMB`
 
+### 2. Classifier
 
+####  2. 1. Global Tokens Only
+
+- element-wise multiplication
+- sum
+
+#### 2. 2. Blending Patches & Words
 
 ## Acknowledgement
 
