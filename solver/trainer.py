@@ -28,7 +28,7 @@ class Trainer(object):
             save_name (str): file name for saving
             info (str): info about this training stage to show in logger
             scheduler (torch.optim.lr_scheduler): step scheduler, updated in every batch
-            train_cfg (cfg): _description_
+            train_cfg (cfg): training configuration for this stage
         """
         # check_period = train_cfg.CHECKPOINT_PERIOD
         log_period = train_cfg.LOG_PERIOD
@@ -46,8 +46,7 @@ class Trainer(object):
             loss_meter.reset()
 
             for image, text, _ in train_loader:
-                # image, text, label = image.to(self.device), text.to(self.device), label.to(self.device)
-                image = image.to(self.device)
+                image, text = image.to(self.device), text.to(self.device)
                 optimizer.zero_grad()
                 if self.prec == "amp":
                     with autocast(enabled=True):
@@ -86,7 +85,8 @@ class Trainer(object):
 
         test_loss = self.cal_loss(model, valid_loader, criterion)
         self.logger.info("Training Stage ONE End: train_loss: {:.5f} test_loss: {:.5f} best_loss: {:.5f}".format(loss_meter.avg, test_loss, best_metric))
-        self.save_state_dict(model, "{}.pt".format(save_name))
+        if self.device == 0:
+            self.save_state_dict(model, "{}.pt".format(save_name))
 
     def train_two(self, save_name: str, model, train_loader, valid_loader, criterion, optimizer, scheduler, train_cfg):
         """ Training Stage Two: fine-tune for the classification task
@@ -95,7 +95,7 @@ class Trainer(object):
             save_name (str): file name for saving
             info (str): info about this training stage to show in logger
             scheduler (torch.optim.lr_scheduler): step scheduler, updated in every batch
-            train_cfg (cfg): _description_
+            train_cfg (cfg): training configuration for this stage
         """
         # check_period = train_cfg.CHECKPOINT_PERIOD
         log_period = train_cfg.LOG_PERIOD
@@ -115,8 +115,7 @@ class Trainer(object):
             acc_meter.reset()
 
             for image, text, label in train_loader:
-                # image, text, label = image.to(self.device), text.to(self.device), label.to(self.device)
-                image, label = image.to(self.device), label.to(self.device)
+                image, text, label = image.to(self.device), text.to(self.device), label.to(self.device)
                 optimizer.zero_grad()
                 if self.prec == "amp":
                     with autocast(enabled=True):
@@ -159,7 +158,8 @@ class Trainer(object):
 
         test_acc = self.eval(model, valid_loader)
         self.logger.info("Training Stage TWO End: train_loss: {:.5f} train_acc: {:.3f}% test_acc: {:.3f}% best_acc: {:.3f}%".format(loss_meter.avg, acc_meter.avg, test_acc, best_metric))
-        self.save_state_dict(model, "{}.pt".format(save_name))
+        if self.device == 0:
+            self.save_state_dict(model, "{}.pt".format(save_name))
 
 
     @torch.no_grad()
@@ -168,8 +168,7 @@ class Trainer(object):
         acc_meter = AverageMeter()
 
         for image, text, label in val_loader:
-            # image, text, label = image.to(self.device), text.to(self.device), label.to(self.device)
-            image, label = image.to(self.device), label.to(self.device)
+            image, text, label = image.to(self.device), text.to(self.device), label.to(self.device)
             # if self.prec == "amp":
             #     with autocast():
             #         z = model(image, text)
@@ -187,8 +186,7 @@ class Trainer(object):
         loss_meter = AverageMeter()
 
         for image, text, _ in val_loader:
-            # image, text = image.to(self.device), text.to(self.device) # TOCHECK
-            image = image.to(self.device)
+            image, text = image.to(self.device), text.to(self.device)
             sim_g, sim_v, sim_t = model(image, text)
             loss = criterion(sim_g, sim_v, sim_t)
             torch.cuda.synchronize()

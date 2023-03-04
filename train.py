@@ -59,7 +59,7 @@ def main(cfg, logger):
 
     criterion_2 = build_criterion(cfg, stage=2)
     optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS)
-    scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, batch_per_epoch) # check n_iters
+    scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, batch_per_epoch) 
 
     trainer.train_two('cls', model, train_loader, test_loader, criterion_2, optimizer_2, scheduler_2, cfg.TRAIN.STAGE2)
 
