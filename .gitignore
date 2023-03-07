@@ -2,6 +2,7 @@ datasets/
 outputs/
 pretrained/
 Test.ipynb
+local_test.*
 
 # IDE
 .idea/

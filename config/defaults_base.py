@@ -27,13 +27,6 @@ _C.MODEL.LAMB = 1.0
 
 
 # -----------------------------------------------------------------------------
-# INPUT
-# -----------------------------------------------------------------------------
-_C.INPUT = CN()
-# Size of the image
-_C.INPUT.IMG_SIZE = 224
-
-# -----------------------------------------------------------------------------
 # DATA
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
@@ -80,8 +73,8 @@ _C.DATA.AUG.RECOUNT = 1
 _C.DATA.AUG.MIXUP = 0.8
 # Cutmix alpha, cutmix enabled if > 0
 _C.DATA.AUG.CUTMIX = 1.0
-# Cutmix min/max ratio, overrides alpha and enables cutmix if set
-_C.DATA.AUG.CUTMIX_MINMAX = None
+# # Cutmix min/max ratio, overrides alpha and enables cutmix if set
+# _C.DATA.AUG.CUTMIX_MINMAX = None
 # Probability of performing mixup or cutmix when either/both is enabled
 _C.DATA.AUG.MIXUP_PROB = 1.0
 # Probability of switching to cutmix when both mixup and cutmix enabled

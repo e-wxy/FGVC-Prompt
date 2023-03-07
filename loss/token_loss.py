@@ -51,7 +51,7 @@ class ContrastiveLoss(nn.Module):
     def forward(self, sim_g, sim_v, sim_t):
         # logit scale
         sim_g = sim_g / self.t_g
-        loss_g = (self.loss_fct(sim_g, torch.arange(sim_v.shape[-1]).to(sim_g.device)) + \
-                  self.loss_fct(sim_g.t(), torch.arange(sim_t.shape[-1]).to(sim_g.device))) / 2
+        loss_g = (self.loss_fct(sim_g, torch.arange(sim_g.shape[-1]).to(sim_g.device)) + \
+                  self.loss_fct(sim_g.t(), torch.arange(sim_g.shape[-2]).to(sim_g.device))) / 2
 
         return loss_g

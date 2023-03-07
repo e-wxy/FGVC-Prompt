@@ -61,7 +61,7 @@ class RandomPermutateDrop(object):
     def __call__(self, des_idxes):
         np.random.shuffle(des_idxes)
         length = len(des_idxes)
-        des_idxes = des_idxes[:length - int(length * np.random.uniform(self.drop_rate))]
+        des_idxes = des_idxes[:length - int(length * np.random.uniform(0, self.drop_rate))]
         return des_idxes
     
 
@@ -132,7 +132,7 @@ class CUBDataset(data.Dataset):
     def __getitem__(self, idx):
         img = Image.open(self.img_paths[idx]).convert('RGB')
         target = self.targets[idx]
-        des_list = list(self.df_attri_label.loc[self.df_attri_label['image_id'] == idx])
+        des_list = list(pd.merge(self.df_attri_label.loc[self.df_attri_label['image_id'] == idx], self.df_attri, on='attribute_id', how='left')['description'])
         des_idxes = np.arange(len(des_list))
 
         if self.transform is not None:
