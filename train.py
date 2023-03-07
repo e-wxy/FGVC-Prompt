@@ -48,6 +48,8 @@ def main(cfg, logger):
 
     trainer.train_one('pair', model, train_loader, test_loader, criterion_1, optimizer_1, scheduler_1, cfg.TRAIN.STAGE1)
 
+    torch.cuda.synchronize()
+    
     # Training Stage Two
     if cfg.DEVICE.DIST:
         model = model.module

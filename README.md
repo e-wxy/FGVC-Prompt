@@ -121,6 +121,10 @@ MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
 
 - [ ] Visual Only ->  Effect of Stage One
 
+### 3. How to align the dimensions of image and text encoders?
+Currently, we simply adopt the projection weights that map the global features in original CLIP.
+Would it be more efficient if we build another learnable mapping matrix?
+
 ## Acknowledgement
 
 Codebase from [CLIP](https://github.com/openai/CLIP), [Swin-Transformer](https://github.com/microsoft/Swin-Transformer)

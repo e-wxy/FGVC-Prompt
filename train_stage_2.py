@@ -37,15 +37,21 @@ def main(cfg, logger):
 
     # Loading Stage One Model
     model = build_training_model(cfg)
-    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'model/pair.pt')))
-    logger.info("Load stage 1 success!")
+    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'model/pair.pt')), strict=False)
+    logger.info("Load encoder params from stage 1 success!")
 
-    # Training Stage Two
-    model = build_cls_model(cfg, model.encoder)
+    # if cfg.DEVICE.NAME == "cuda":
+    #     model.cuda()    # Move to GPU before dist
+    # if cfg.DEVICE.DIST:
+    #     model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
 
-    # model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'model/classification.pt')))
-    # logger.info("Load stage 2 success!")
+    # criterion_1 = build_criterion(cfg, stage=1)
+    # logger.info("TokenFlow Loss: {:.5f}".format(trainer.cal_loss(model, test_loader, criterion_1)))
     
+    # Training Stage Two
+    if cfg.DEVICE.DIST:
+        model = model.module
+    model = build_cls_model(cfg, model.encoder)
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()
     if cfg.DEVICE.DIST:
@@ -53,9 +59,9 @@ def main(cfg, logger):
 
     criterion_2 = build_criterion(cfg, stage=2)
     optimizer_2 = build_partial_optimizer(model, ['classifier'], ['encoder'], cfg.TRAIN.STAGE2.OPTIMIZER.NAME, cfg.TRAIN.STAGE2.OPTIMIZER.PARAMS)
-    scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, batch_per_epoch) # check n_iters
+    scheduler_2 = build_scheduler(cfg.TRAIN.STAGE2, optimizer_2, batch_per_epoch) 
 
-    trainer.train_two('classification', model, train_loader, test_loader, criterion_2, optimizer_2, scheduler_2, cfg.TRAIN.STAGE2)
+    trainer.train_two('cls', model, train_loader, test_loader, criterion_2, optimizer_2, scheduler_2, cfg.TRAIN.STAGE2)
 
     trainer.record_training_process()
 
@@ -68,7 +74,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training")
     parser.add_argument('-c', "--cfg_file", default="", 
                         help="Path to config file", type=str)
-    parser.add_argument('-n', "--name", default="test1", 
+    parser.add_argument('-n', "--name", default="s2", 
                         help="Name of the logger", type=str)
     parser.add_argument('-i', "--info", default="", 
                         help="Info about this run", type=str)
@@ -108,12 +114,6 @@ if __name__ == '__main__':
 
     logger = create_logger(os.path.join(output_dir, 'logs'), dist_rank=rank, name=args.name)
     logger.info(args.info)
-    # logger.info(args)
-    # if args.config_file != "":
-    #     logger.info("Loaded configuration file {}".format(args.config_file))
-    #     with open(args.config_file, 'r') as cf:
-    #         config_str = "\n" + cf.read()
-    #         logger.info(config_str)
     logger.info("Running with config:\n{}".format(cfg))
 
     

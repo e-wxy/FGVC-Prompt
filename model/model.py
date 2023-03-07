@@ -97,6 +97,10 @@ class SimCLIP(nn.Module):
 
     def forward(self, image: torch.Tensor, text: torch.Tensor):
         patch_features, image_features, word_features, text_features = self.encoder(image, text)
+        # TODO: normalization and logit scale (temperature)
+        # normalized global features
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
         # Compute Similarity
         sim_g = image_features @ text_features.t()  # [B1, B2]
         c = torch.matmul(patch_features.unsqueeze(1), word_features.permute(0, 2, 1))  # [B1, B2, L1, L2]
@@ -104,8 +108,8 @@ class SimCLIP(nn.Module):
         e = torch.matmul(word_features, image_features.t()).permute((2, 0, 1))   # [B1, B2, L2]
         emc = torch.mul(c, e.unsqueeze(-2))     # [B1, B2, L1, L2]
         dmc = torch.mul(c, d.unsqueeze(-1))     # [B1, B2, L1, L2]
-        T_v = torch.mul(d.unsqueeze(-1), F.log_softmax(emc * self.lamb, dim=-1)) / d.shape[-1] # [B1, B2, L1, L2]
-        T_t = torch.mul(e.unsqueeze(-2), F.log_softmax(dmc * self.lamb, dim=-2)) / e.shape[-1] # [B1, B2, L1, L2]
+        T_v = torch.mul(d.unsqueeze(-1), F.softmax(emc * self.lamb, dim=-1)) / d.shape[-1] # [B1, B2, L1, L2]
+        T_t = torch.mul(e.unsqueeze(-2), F.softmax(dmc * self.lamb, dim=-2)) / e.shape[-1] # [B1, B2, L1, L2]
         # emc = torch.matmul(c.permute(1, 0, 2, 3), e.unsqueeze(-1)).squeeze(-1) # [B2, B1, L1]
         # dmc = torch.matmul(c.permute(0, 1, 3, 2), d.unsqueeze(-1)).squeeze(-1) # [B1, B2, L2]
         # T_v = torch.mul(d, F.softmax(emc.permute((1, 0, 2)) * self.lamb)) / e.shape[-1] # [B1, B2, L1]
@@ -115,6 +119,31 @@ class SimCLIP(nn.Module):
         sim_t = torch.mul(c, T_t).sum(dim=(2, 3)).t()   # [B2, B1]
 
         return sim_g, sim_v, sim_t
+    
+
+class BaseCLIP(nn.Module):
+    """ 
+    CLIP model that return global similarity in forward(),
+    used for building baseline.
+    """
+    def __init__(self, cfg, clip_model=None) -> None:
+        super().__init__()
+        if clip_model is not None:
+            self.encoder = clip_model
+        else:
+            self.encoder = TokenCLIP(cfg)
+        self.lamb = cfg.MODEL.LAMB
+
+
+    def forward(self, image: torch.Tensor, text: torch.Tensor):
+        _, image_features, _, text_features = self.encoder(image, text)
+        # normalized global features
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
+        # Compute Similarity
+        sim_g = image_features @ text_features.t()  # [B1, B2]
+
+        return sim_g, 0, 0
 
         
 

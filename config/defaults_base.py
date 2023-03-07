@@ -98,6 +98,8 @@ _C.TRAIN.SEED = 123
 # Weights for similarity: 
 # loss = loss_g * SIM_GWEIGHTS + (loss_v + loss_t) * (1 - SIM_GWEIGHTS) / 2
 _C.TRAIN.SIM_GWEIGHTS = 0.5
+_C.TRAIN.T_GLOBAL = 0.07
+_C.TRAIN.T_PART = 0.07
 # Auto resume from latest checkpoint
 _C.TRAIN.AUTO_RESUME = True
 # Gradient Accumulation

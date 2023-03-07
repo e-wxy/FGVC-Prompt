@@ -8,6 +8,13 @@ from model.clip.clip import tokenize
     
     
 def get_dataframe(root, train=True):
+    """ Get meta infomation from txt and return DataFrame
+
+    Args:
+        root (str): 'root dir of CUB dataset'
+        train (bool): whether is training set.
+
+    """
     root = os.path.join(root, 'CUB_200_2011')
     attri_dir = os.path.join(root, 'attributes')
     attri_file = os.path.join(attri_dir, 'attributes.txt')
