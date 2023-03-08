@@ -1,7 +1,8 @@
 datasets/
 outputs/
 pretrained/
-Test.ipynb
+visualize/
+*.ipynb
 local_test.*
 
 # IDE

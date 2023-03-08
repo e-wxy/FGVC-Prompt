@@ -8,8 +8,9 @@ from torch.utils import data
 
 from .cub_text import CUBDataset, RandomPermutateDrop
 
-def build_dataloader(cfg, is_train=True):
-    if is_train:
+def build_dataloader(cfg, is_train=True, stage=0):
+    # use the same batch size for contrastive learning
+    if is_train or stage == 1:
         batch_size = cfg.DATA.DATALOADER.BATCH_SIZE
     else:
         batch_size = cfg.DATA.DATALOADER.TEST_BATCH_SIZE

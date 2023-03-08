@@ -140,8 +140,11 @@ class CUBDataset(data.Dataset):
 
         if self.text_transform:
             des_idxes = self.text_transform(des_idxes)
-
-        text = self.prompt_start + self.prompt_link.join([des_list[des_idx] for des_idx in des_idxes]) + "."
+        
+        if len(des_idxes) == 0:
+            text = self.prompt_start + " attribute features are vague."
+        else:
+            text = self.prompt_start + self.prompt_link.join([des_list[des_idx] for des_idx in des_idxes]) + "."
         text = tokenize(text).squeeze()
 
         return img, text, target

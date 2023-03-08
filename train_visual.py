@@ -25,7 +25,7 @@ def main(cfg, logger):
     # Data
     logger.info("Building Dataset")
     train_loader = build_dataloader(cfg, True)
-    test_loader = build_dataloader(cfg, False, 1)
+    test_loader = build_dataloader(cfg, False, 2)
 
     if cfg.DEVICE.DIST:
         batch_per_epoch = (len(train_loader) + int(os.environ['WORLD_SIZE']) - 1) // int(os.environ['WORLD_SIZE'])
@@ -35,27 +35,13 @@ def main(cfg, logger):
     trainer = Trainer(cfg, logger)
 
 
-    # Training Stage One
+    # Loading Stage One Model
     model = build_training_model(cfg)
-    if cfg.DEVICE.NAME == "cuda":
-        model.cuda()    # Move to GPU before dist
-    if cfg.DEVICE.DIST:
-        model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
+    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'pair.pt')), strict=False)
+    logger.info("Load encoder params from stage 1 success!")
 
-    criterion_1 = build_criterion(cfg, stage=1)
-    optimizer_1 = build_optimizer(cfg.TRAIN.STAGE1, model)
-    scheduler_1 = build_scheduler(cfg.TRAIN.STAGE1, optimizer_1, batch_per_epoch)
-
-    trainer.train_one('pair', model, train_loader, test_loader, criterion_1, optimizer_1, scheduler_1, cfg.TRAIN.STAGE1)
-
-    torch.cuda.synchronize()
-    
     # Training Stage Two
-    test_loader = build_dataloader(cfg, False, 2)
-    
-    if cfg.DEVICE.DIST:
-        model = model.module
-    model = build_cls_model(cfg, model.encoder)
+    model = build_cls_model(cfg, model.encoder, 'visual')
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()
     if cfg.DEVICE.DIST:
@@ -78,7 +64,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training")
     parser.add_argument('-c', "--cfg_file", default="", 
                         help="Path to config file", type=str)
-    parser.add_argument('-n', "--name", default="test1", 
+    parser.add_argument('-n', "--name", default="s2", 
                         help="Name of the logger", type=str)
     parser.add_argument('-i', "--info", default="", 
                         help="Info about this run", type=str)
@@ -118,12 +104,6 @@ if __name__ == '__main__':
 
     logger = create_logger(os.path.join(output_dir, 'logs'), dist_rank=rank, name=args.name)
     logger.info(args.info)
-    # logger.info(args)
-    # if args.config_file != "":
-    #     logger.info("Loaded configuration file {}".format(args.config_file))
-    #     with open(args.config_file, 'r') as cf:
-    #         config_str = "\n" + cf.read()
-    #         logger.info(config_str)
     logger.info("Running with config:\n{}".format(cfg))
 
     

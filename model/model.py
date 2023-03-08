@@ -172,6 +172,27 @@ class ClsCLIP(nn.Module):
         x = self.classifier(x)
 
         return x
+    
+
+class VisualCLIP(nn.Module):
+    """ image encoder from CLIP """
+    def __init__(self, cfg, clip_model):
+        super().__init__()
+        self.encoder = clip_model.image_encoder
+        self.dtype = clip_model.dtype
+        self.classifier = nn.Sequential(OrderedDict([
+                            ('ln', nn.LayerNorm(clip_model.embed_dim)), 
+                            ('linear1', nn.Linear(clip_model.embed_dim, cfg.MODEL.HIDDEN_DIM)),
+                            ('act', nn.ReLU(inplace=True)),
+                            ('linear2', nn.Linear(cfg.MODEL.HIDDEN_DIM, cfg.MODEL.CLASS_NUM)),
+                            ]))
+        self.classifier.apply(weights_init_kaiming)
+
+    def forward(self, image, text):
+        _, x = self.encoder(image)
+        x = self.classifier(x)
+
+        return x
 
 
 
