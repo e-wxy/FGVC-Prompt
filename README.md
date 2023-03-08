@@ -74,7 +74,7 @@ MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN \
 TRAIN.STAGE1.MAX_EPOCHS 5 TRAIN.STAGE2.MAX_EPOCHS 100
 ```
 
-### Fine-Tune
+### Stage TWO
 ```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
 -n "test2" -i "Tuning stage 2"   \
@@ -89,6 +89,15 @@ torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
+```
+
+### Visual Baseline
+```bash
+torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_visual.py \
+-n "visual" -i "Basic global prompt"   \
+-c $GEMINI_RUN/Prompt/configs/cub.yml   \
+OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
+MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
 ```
 
 ## To Tune
