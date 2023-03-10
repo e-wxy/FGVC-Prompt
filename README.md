@@ -59,7 +59,7 @@ torchrun --nproc_per_node=2 train.py -n "test1" -c configs/cub.yml MODEL.PRETRAI
 ### Run on Virtaicloud
 ```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train.py \
--n "test1" -i "First try"   \
+-n "tokenflow" -i "First try"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
@@ -76,22 +76,25 @@ TRAIN.STAGE1.MAX_EPOCHS 5 TRAIN.STAGE2.MAX_EPOCHS 100
 
 ### Stage TWO
 ```bash
-torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
--n "test2" -i "Tuning stage 2"   \
+torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_stage_2.py \
+-n "s2" -i "Tuning stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN
 ```
 Dev
 ```bash
-torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/fine_tune.py \
--n "test3" -i "Tuning lr for stage 2"   \
+torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_stage_2.py \
+-n "s2" -i "Tuning lr for stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_DATA_OUT
 ```
 
-### Visual Baseline
+### Baseline
+
+Visual Only
+
 ```bash
 torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_visual.py \
 -n "visual" -i "Basic global prompt"   \
@@ -99,6 +102,18 @@ torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_visual.py \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
 MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
 ```
+
+Contrastive Learning
+
+```bash
+torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_baseline.py \
+-n "base" -i "Basic global prompt"   \
+-c $GEMINI_RUN/Prompt/configs/cub.yml   \
+OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
+MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN MODEL.PRETRAIN_FILE 'ViT-B-16.pt'
+```
+
+
 
 ## To Tune
 

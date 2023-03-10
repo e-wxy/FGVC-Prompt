@@ -35,6 +35,7 @@ class Trainer(object):
         eval_period = train_cfg.EVAL_PERIOD
         self.stages.append(train_cfg.MAX_EPOCHS)
         loss_meter = AverageMeter()
+        norm_meter = AverageMeter()
         best_metric = 1e6
 
 
@@ -53,12 +54,23 @@ class Trainer(object):
                         sim_g, sim_v, sim_t = model(image, text)
                         loss = criterion(sim_g, sim_v, sim_t)
                     self.scaler.scale(loss).backward()
+                    # clip gradient
+                    if self.cfg.TRAIN.CLIP_GRAD:
+                        self.scaler.unscale_(optimizer)
+                        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.cfg.TRAIN.CLIP_GRAD)
+                    else:
+                        self.scaler.unscale_(optimizer)
+                        grad_norm = get_grad_norm(model.parameters())
                     self.scaler.step(optimizer)
                     self.scaler.update()
                 else:
                     sim_g, sim_v, sim_t = model(image, text)
                     loss = criterion(sim_g, sim_v, sim_t)
                     loss.backward()
+                    if self.cfg.TRAIN.CLIP_GRAD:
+                        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.cfg.TRAIN.CLIP_GRAD)
+                    else:
+                        grad_norm = get_grad_norm(model.parameters())
                     optimizer.step()
 
                 scheduler.step(step)
@@ -66,20 +78,23 @@ class Trainer(object):
 
                 torch.cuda.synchronize()
                 loss = reduce_tensor(loss)
+                grad_norm = reduce_tensor(grad_norm)
                 loss_meter.update(loss.item(), image.size(0))
+                norm_meter.update(grad_norm)
 
 
             self.train_loss.append(loss_meter.avg)
 
             if epoch % log_period == 0:
-                self.logger.info("Epoch {:3d}: train_loss: {:.5f}".format(epoch+1, loss_meter.avg))
+                self.logger.info(f'Epoch {epoch+1:3d}: train_loss: {loss_meter.avg:.5f} grad_norm: {norm_meter.avg:.4f}')
 
             if epoch % eval_period == 0:
                 test_loss = self.cal_loss(model, valid_loader, criterion)
                 self.test_loss.append(test_loss)
                 self.logger.info("Epoch {:3d}: test_loss: {:.5f}".format(epoch+1, test_loss))
                 if test_loss < best_metric:
-                    self.save_state_dict(model, "{}.pt".format("best_1"))
+                    if self.device == 0:
+                        self.save_state_dict(model, "{}.pt".format("best_1"))
                     best_metric = test_loss
                 model.train()
 
@@ -103,6 +118,7 @@ class Trainer(object):
         self.stages.append(train_cfg.MAX_EPOCHS)
         loss_meter = AverageMeter()
         acc_meter = AverageMeter()
+        norm_meter = AverageMeter()
         best_metric = 0
 
 
@@ -122,12 +138,23 @@ class Trainer(object):
                         z = model(image, text)
                         loss = criterion(z, label)
                     self.scaler.scale(loss).backward()
+                    # clip gradient
+                    if self.cfg.TRAIN.CLIP_GRAD:
+                        self.scaler.unscale_(optimizer)
+                        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.cfg.TRAIN.CLIP_GRAD)
+                    else:
+                        self.scaler.unscale_(optimizer)
+                        grad_norm = get_grad_norm(model.parameters())
                     self.scaler.step(optimizer)
                     self.scaler.update()
                 else:
                     z = model(image, text)
                     loss = criterion(z, label)
                     loss.backward()
+                    if self.cfg.TRAIN.CLIP_GRAD:
+                        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.cfg.TRAIN.CLIP_GRAD)
+                    else:
+                        grad_norm = get_grad_norm(model.parameters())
                     optimizer.step()
 
                 acc = accuracy(z.data, label)[0]
@@ -137,22 +164,25 @@ class Trainer(object):
                 torch.cuda.synchronize()
                 loss = reduce_tensor(loss)
                 acc = reduce_tensor(acc)
+                grad_norm = reduce_tensor(grad_norm)
                 loss_meter.update(loss.item(), label.size(0))
                 acc_meter.update(acc.item(), label.size(0))
+                norm_meter.update(grad_norm)
 
 
             self.train_loss.append(loss_meter.avg)
             self.train_acc.append(acc_meter.avg)
 
             if epoch % log_period == 0:
-                self.logger.info("Epoch {:3d}: loss: {:.5f} train_acc: {:.3f}%".format(epoch+1, loss_meter.avg, acc_meter.avg))
+                self.logger.info("Epoch {:3d}: loss: {:.5f} train_acc: {:.3f}% grad_norm: {:.4f}".format(epoch+1, loss_meter.avg, acc_meter.avg, norm_meter.avg))
 
             if epoch % eval_period == 0:
                 test_acc = self.eval(model, valid_loader)
                 self.test_acc.append(test_acc)
                 self.logger.info("Epoch {:3d}: test_acc: {:.3f}%".format(epoch+1, test_acc))
                 if test_acc > best_metric:
-                    self.save_state_dict(model, "{}.pt".format("best_2"))
+                    if self.device == 0:
+                        self.save_state_dict(model, "{}.pt".format("best_2"))
                     best_metric = test_acc
                 model.train()
 

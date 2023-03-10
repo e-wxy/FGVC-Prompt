@@ -93,6 +93,8 @@ class SimCLIP(nn.Module):
         else:
             self.encoder = TokenCLIP(cfg)
         self.lamb = cfg.MODEL.LAMB
+        self.image_ln = nn.LayerNorm(self.encoder.embed_dim)
+        self.text_ln = nn.LayerNorm(self.encoder.embed_dim)
 
 
     def forward(self, image: torch.Tensor, text: torch.Tensor):
@@ -101,6 +103,9 @@ class SimCLIP(nn.Module):
         # normalized global features
         image_features = image_features / image_features.norm(dim=1, keepdim=True)
         text_features = text_features / text_features.norm(dim=1, keepdim=True)
+        # normalized patch/word features
+        patch_features = self.image_ln(patch_features)
+        word_features = self.text_ln(word_features)
         # Compute Similarity
         sim_g = image_features @ text_features.t()  # [B1, B2]
         c = torch.matmul(patch_features.unsqueeze(1), word_features.permute(0, 2, 1))  # [B1, B2, L1, L2]

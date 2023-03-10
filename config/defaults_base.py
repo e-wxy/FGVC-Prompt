@@ -104,7 +104,7 @@ _C.TRAIN.ACCUMULATION_STEPS = 1
 # Automatic Mixed Precision Training
 _C.TRAIN.PREC = "amp"
 # Clip Gradient Norm
-_C.TRAIN.CLIP_GRAD = 5.0
+_C.TRAIN.CLIP_GRAD = 1.0
 _C.TRAIN.LABEL_SMOOTHING = 0.1
 
 

@@ -6,7 +6,7 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import torch.distributed as dist
 from torch.utils import data
 
-from .cub_text import CUBDataset, RandomPermutateDrop
+from .cub_text import CUBDataset
 
 def build_dataloader(cfg, is_train=True, stage=0):
     # use the same batch size for contrastive learning
@@ -47,7 +47,7 @@ def build_dataset(cfg, is_train=True):
     transform = build_transform(cfg, is_train)
     root = cfg.DATA.DATASET.ROOT_DIR
     if cfg.DATA.DATASET.NAME == 'cub':
-        dataset = CUBDataset(os.path.join(root, 'cub2002011'), transform, RandomPermutateDrop(cfg.DATA.DATASET.DROP_RATE), is_train)
+        dataset = CUBDataset(os.path.join(root, 'cub2002011'), transform, None, is_train)
     return dataset
 
 def build_transform(cfg, is_train=True):
