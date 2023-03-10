@@ -47,10 +47,10 @@ def main(cfg, logger):
 
     # criterion_1 = build_criterion(cfg, stage=1)
     # logger.info("TokenFlow Loss: {:.5f}".format(trainer.cal_loss(model, test_loader, criterion_1)))
+    # if cfg.DEVICE.DIST:
+    #     model = model.module  
     
     # Training Stage Two
-    if cfg.DEVICE.DIST:
-        model = model.module
     model = build_cls_model(cfg, model.encoder)
     if cfg.DEVICE.NAME == "cuda":
         model.cuda()

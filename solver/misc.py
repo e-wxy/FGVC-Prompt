@@ -16,6 +16,8 @@ def make_params_dict(params_string: str, assign=" = ", divide="; ") -> dict:
         params_dict: {'lr': 0.05, 'weight_decay': 0.0001, 'eps': 1e-08, 'betas': (0.9, 0.999)}
         
     """
+    if params_string is None:
+        return None
     params_dict = dict(param_string.split(assign) for param_string in params_string.split(divide))
     for key in params_dict:
         # int

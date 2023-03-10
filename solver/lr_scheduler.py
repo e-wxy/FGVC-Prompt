@@ -9,15 +9,33 @@ import torch
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from timm.scheduler.step_lr import StepLRScheduler
 from timm.scheduler.scheduler import Scheduler
+from torch.optim.lr_scheduler import _LRScheduler
+import math
+from .misc import make_params_dict
 
 
 def build_scheduler(train_cfg, optimizer, n_iter_per_epoch):
     num_steps = int(train_cfg.MAX_EPOCHS * n_iter_per_epoch)
     warmup_steps = int(train_cfg.WARMUP_EPOCHS * n_iter_per_epoch)
+    scheduler_params = make_params_dict(train_cfg.SCHEDULER.PARAMS)
 
     lr_scheduler = None
     # https://github.com/huggingface/pytorch-image-models/blob/main/timm/scheduler/cosine_lr.py#L18
-    if train_cfg.SCHEDULER.NAME == 'cosine':
+    if train_cfg.SCHEDULER.NAME == 'warm_cosine':
+        if scheduler_params is None:
+            lr_scheduler = WarmupCosineLR(
+                optimizer, 
+                max_steps=num_steps,
+                warmup_steps=warmup_steps,
+            )
+        else:
+            lr_scheduler = WarmupCosineLR(
+                optimizer, 
+                max_steps=num_steps,
+                warmup_steps=warmup_steps,
+                **scheduler_params
+            )
+    elif train_cfg.SCHEDULER.NAME == 'cosine':
         lr_scheduler = CosineLRScheduler(
             optimizer,
             t_initial=num_steps,
@@ -100,3 +118,45 @@ class LinearLRScheduler(Scheduler):
             return self._get_lr(num_updates)
         else:
             return None
+
+
+class WarmupCosineLR(_LRScheduler):
+    def __init__(
+            self,
+            optimizer,
+            max_steps=10000,
+            min_factor=1e-4,
+            warmup_steps=1000,
+            warmup_factor=0.1,
+            warmup_method='linear',
+            last_epoch=-1,
+    ):
+
+        if warmup_method not in ("constant", "linear"):
+            raise ValueError(
+                "Only 'constant' or 'linear' warmup_method accepted"
+                "got {}".format(warmup_method)
+            )
+
+        self.max_steps = max_steps
+        self.warmup_factor = warmup_factor
+        self.warmup_steps = warmup_steps
+        self.min_factor = min_factor
+        self.warmup_method = warmup_method
+        super(WarmupCosineLR, self).__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+
+        factor = 1
+
+        if self.last_epoch < self.warmup_steps:
+            if self.warmup_method == 'linear':
+                alpha = self.last_epoch / self.warmup_steps
+                factor = self.warmup_factor * (1 - alpha) + alpha
+            else:
+                factor = self.warmup_factor
+        else:
+            progress = float(self.last_epoch - self.warmup_steps) / float(self.max_steps - self.warmup_steps)
+            factor = self.min_factor + (1 - self.min_factor) * (1. + math.cos(math.pi * progress)) / 2
+
+        return [base_lr * factor for base_lr in self.base_lrs]

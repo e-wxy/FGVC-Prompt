@@ -45,6 +45,7 @@ class Trainer(object):
 
         for epoch in range(self.stages[-1]):
             loss_meter.reset()
+            norm_meter.reset()
 
             for image, text, _ in train_loader:
                 image, text = image.to(self.device), text.to(self.device)
@@ -73,8 +74,8 @@ class Trainer(object):
                         grad_norm = get_grad_norm(model.parameters())
                     optimizer.step()
 
-                scheduler.step(step)
                 step += 1
+                scheduler.step(step)
 
                 torch.cuda.synchronize()
                 loss = reduce_tensor(loss)
@@ -129,6 +130,7 @@ class Trainer(object):
         for epoch in range(self.stages[-1]):
             loss_meter.reset()
             acc_meter.reset()
+            norm_meter.reset()
 
             for image, text, label in train_loader:
                 image, text, label = image.to(self.device), text.to(self.device), label.to(self.device)
@@ -158,8 +160,8 @@ class Trainer(object):
                     optimizer.step()
 
                 acc = accuracy(z.data, label)[0]
-                scheduler.step(step)
                 step += 1
+                scheduler.step(step)
 
                 torch.cuda.synchronize()
                 loss = reduce_tensor(loss)

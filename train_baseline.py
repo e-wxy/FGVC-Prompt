@@ -42,7 +42,7 @@ def main(cfg, logger):
     if cfg.DEVICE.DIST:
         model = DDP(model, device_ids=[cfg.DEVICE.LOCAL_RANK])
 
-    criterion_1 = build_criterion(cfg, stage=1)
+    criterion_1 = build_criterion(cfg, stage=1, tokenflow=False)
     optimizer_1 = build_optimizer(cfg.TRAIN.STAGE1, model)
     scheduler_1 = build_scheduler(cfg.TRAIN.STAGE1, optimizer_1, batch_per_epoch)
 
