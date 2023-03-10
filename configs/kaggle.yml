@@ -6,10 +6,16 @@ DATA:
     NUM_WORKERS: 2
 
 TRAIN:
-  SIM_GWEIGHTS: 0.5
+  SIM_GWEIGHTS: 0.9
+  CLIP_GRAD: 5.0
+  STAGE1:
+    MAX_EPOCHS: 100
+    WARMUP_EPOCHS: 10
+    OPTIMIZER:
+      PARAMS: "lr = 5e-6; weight_decay = 1e-4; eps = 1e-8; betas = (0.9, 0.999)"
   STAGE2:
     MAX_EPOCHS: 100
-    WARMUP_EPOCHS: 5
+    WARMUP_EPOCHS: 10
     WEIGHT_DECAY: 1e-4
     BASE_LR: 5e-2
     WARMUP_LR: 5e-4

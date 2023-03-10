@@ -80,7 +80,7 @@ torchrun --nproc_per_node=2 $GEMINI_RUN/Prompt/train_stage_2.py \
 -n "s2" -i "Tuning stage 2"   \
 -c $GEMINI_RUN/Prompt/configs/cub.yml   \
 OUTPUT_DIR $GEMINI_DATA_OUT DATA.DATASET.ROOT_DIR $GEMINI_DATA_IN1  \
-MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN
+MODEL.PRETRAIN_PATH $GEMINI_PRETRAIN/model
 ```
 Dev
 ```bash

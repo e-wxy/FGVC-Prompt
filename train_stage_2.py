@@ -37,7 +37,7 @@ def main(cfg, logger):
 
     # Loading Stage One Model
     model = build_training_model(cfg)
-    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'model/pair.pt')), strict=False)
+    model.load_state_dict(torch.load(os.path.join(cfg.MODEL.PRETRAIN_PATH, 'pair.pt')), strict=False)
     logger.info("Load encoder params from stage 1 success!")
 
     # if cfg.DEVICE.NAME == "cuda":
